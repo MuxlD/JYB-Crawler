@@ -76,7 +76,7 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 	contx, cancel := chrome.AssignBrowser(Basics.Allo)
 
 	var stop bool
-	var ok, pend bool
+
 	var tsCraw Basics.TsUrl
 	for {
 		select {
@@ -90,9 +90,9 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 		case <-done:
 			//生产者结束信号
 			stop = true
-		case tsCraw, ok = <-tsCh:
+		case tsCraw = <-tsCh:
 			//tsCh通道和pendCh通道全部读出，done通道关闭
-			if !ok && stop && !pend {
+			if stop && tsCraw.ID == 0 {
 				log.Printf("通道内容已消费完," + chromeId + "号协程退出...\n")
 				//所有内容写入完成关闭es写入通道
 				close(elasticsearch.Docsc)
@@ -105,8 +105,9 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 			if err != nil {
 				log.Println(err)
 			}
-		case tsCraw, pend = <-pendCh:
-			if !pend {
+		case tsCraw = <-pendCh:
+			if tsCraw.ID == 0 {
+				log.Printf("pendCh通道内容已消费完")
 				continue
 			}
 			err := crawlerByPendUrl(tsCraw, contx)
