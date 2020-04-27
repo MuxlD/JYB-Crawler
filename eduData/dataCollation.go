@@ -102,7 +102,7 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 			//消费函数
 			err := ts.CrawlerByUrl(tsCraw, contx)
 			if err != nil {
-				log.Println(err)
+				log.Println("tsCh:", err)
 			}
 		case tsCraw, pend = <-pendCh:
 			if !pend {
@@ -111,7 +111,7 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 			}
 			err := crawlerByPendUrl(tsCraw, contx)
 			if err != nil {
-				log.Println(err)
+				log.Println("pendCh:", err)
 			}
 		}
 	}
