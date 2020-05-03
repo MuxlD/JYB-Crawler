@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/chromedp/chromedp"
 	"log"
-	"sync/atomic"
 	"time"
 )
 
@@ -32,13 +31,9 @@ func crawlerByPendUrl(tsCraw Basics.TsUrl, ctx context.Context) (err error) {
 		err = errors.New("Discard options:" + tsCraw.Url)
 		return
 	}
-	atomic.AddUint64(&TsID, 1)
-	bts.ID = int(TsID)
-	bts.TypeID = tsCraw.TypeID
-	bts.TypeUrl = Basics.EveryType[tsCraw.TypeID-1].TypeUrl   //Closed during test.
-	bts.TypeName = Basics.EveryType[tsCraw.TypeID-1].TypeName //Ditto
-	bts.Url = tsCraw.Url
-	//成功赋值字段name,course,brightSpot,info,campus,phoneNumber,type_id,type_url,type_name,url
+
+	into(&bts, tsCraw)
+
 	fmt.Println(bts)
 
 	elasticsearch.Docsc <- bts
@@ -50,7 +45,7 @@ func crawlerByPendUrl(tsCraw Basics.TsUrl, ctx context.Context) (err error) {
 
 func everyPend(goCtx context.Context, url string) (bts Basics.TrainingSchool, retry bool) {
 
-	ctx, cancel := context.WithTimeout(goCtx, 15*time.Second) //time.Duration(chromedpTimeout)
+	ctx, cancel := context.WithTimeout(goCtx, time.Duration(chromedpTimeout)*time.Second) //time.Duration(chromedpTimeout)
 	defer cancel()
 
 	err := chromedp.Run(ctx,

@@ -13,7 +13,7 @@ func (ts *TsCrawler) AllLink() {
 	db.Model(Basics.Type{}).Find(&Basics.EveryType)
 	if Basics.EveryType[19].Count != 0 {
 		//如果最后一种类型的机构数量不为0；
-		//说明所有的链接在没有手动删除的前提下已收集完成；
+		//说明所有的链接已全部存入数据库；
 		//可直接从数据库中取出放入通道tsCh。
 		err := getAllEduInDB(db)
 		if err != nil {
@@ -46,5 +46,6 @@ func getAllEduInDB(db *gorm.DB) error {
 	for _, tst := range dbAllTs {
 		tsCh <- tst
 	}
+	close(tsCh)
 	return nil
 }

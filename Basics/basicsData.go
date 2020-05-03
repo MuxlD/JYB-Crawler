@@ -38,7 +38,7 @@ type MySql struct {
 }
 
 type TrainingSchool struct {
-	ID          int      `json:"id"`
+	ID          uint     `json:"id"`
 	Url         string   `json:"url"`
 	Name        string   `json:"name"`
 	TypeID      uint     `json:"type_id"`

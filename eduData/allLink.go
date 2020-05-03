@@ -16,11 +16,15 @@ var maxID uint
 
 //生产者函数
 func (ts *TsCrawler) getAllEdu(db *gorm.DB) {
+	defer close(tsCh)
 	//清空数据
 	db.Exec("TRUNCATE TABLE ts_urls;")
 
-	chrome := NewChromedp(context.Background())
+	chrome := NewChromedp(ts.ctx)
 	defer chrome.Close()
+	ctx, cancel := chrome.AssignBrowser(Basics.Allo)
+	defer cancel()
+
 	//便利出所有的类型
 	for id, ets := range Basics.EveryType {
 		//方便程序添加主键值
@@ -33,7 +37,7 @@ func (ts *TsCrawler) getAllEdu(db *gorm.DB) {
 		start := time.Now()
 
 		//获取类型最大页码
-		maxPa, err := maxPage(chrome, ets)
+		maxPa, err := maxPage(ctx, ets)
 		if err != nil {
 			log.Println(err)
 			//继续下一种类型
@@ -43,38 +47,41 @@ func (ts *TsCrawler) getAllEdu(db *gorm.DB) {
 		db.Model(&Basics.Type{}).Where("id = ?", id+1).Update("max_page", maxPa)
 		fmt.Println("最大页码为", maxPa)
 
-		//一个类型新建任务，timeout与最大页码有关
-		ctx, cancel := chrome.NewTab()
-		ctx0, _ := context.WithTimeout(ctx, time.Duration((maxPa/3+1)*chromedpTimeout)*time.Second)
-
 		var oneUrl Basics.TsUrl
 		oneUrl.TypeID = ets.ID
 
 		var count int
 		//分页加载
 		for n := 1; n <= maxPa; n++ {
-			//学校链接爬取,及通道的写入
-			var urlHtml string
-			nowPageUrl := ets.TypeUrl + "p" + strconv.Itoa(n) + ".html"
-			fmt.Println("当前链接：", nowPageUrl)
-			err = chromedp.Run(ctx0,
-				chromedp.Navigate(nowPageUrl),
-				chromedp.WaitVisible(`.mt10`),
-				chromedp.OuterHTML(`.mt10 .office-result-list`, &urlHtml),
-			)
+			urlHtml, err := pageLink(ctx, ets.TypeUrl, n)
 			if err != nil {
 				log.Println("getAllEdu html提取失败", err)
 				//继续下一页
 				continue
 			}
-			selectUrl(urlHtml, `href="(.*)" target="_blank" class="office-rlist-name"`, oneUrl, db, &count)
+			selectUrl(urlHtml,
+				`href="(.*)" target="_blank" class="office-rlist-name"`,
+				oneUrl, db, &count,
+			)
 		}
 		//update count from types where id = id+1
 		db.Model(&Basics.Type{}).Where("id = ?", id+1).Update("count", count)
 		log.Printf("抓取成功:%v，爬取耗时：%v\n", ets.TypeUrl, time.Since(start))
-		//该类型爬虫结束，取消任务
-		cancel()
 	}
+}
+
+func pageLink(ctx context.Context, url string, n int) (urlHtml string, err error) {
+	ctx0, cancel0 := context.WithTimeout(ctx, time.Duration(chromedpTimeout)*time.Second)
+	defer cancel0()
+
+	nowPageUrl := url + "p" + strconv.Itoa(n) + ".html"
+	fmt.Println("当前链接：", nowPageUrl)
+	err = chromedp.Run(ctx0,
+		chromedp.Navigate(nowPageUrl),
+		chromedp.WaitVisible(`.mt10`),
+		chromedp.OuterHTML(`.mt10 .office-result-list`, &urlHtml),
+	)
+	return
 }
 
 //提取url
@@ -92,11 +99,10 @@ func selectUrl(html string, reg string, tst Basics.TsUrl, db *gorm.DB, count *in
 }
 
 //最大页码查询
-func maxPage(chrome *ChromeBrowser, ets Basics.Type) (maxPa int, err error) {
-	ctx, c := chrome.NewTab()
-	defer c()
-	ctx, _ = context.WithTimeout(ctx, time.Duration(chromedpTimeout)*time.Second)
-	err = chromedp.Run(ctx,
+func maxPage(ctx context.Context, ets Basics.Type) (maxPa int, err error) {
+	ctx0, cancel := context.WithTimeout(ctx, time.Duration(chromedpTimeout)*time.Second)
+	defer cancel()
+	err = chromedp.Run(ctx0,
 		//页面跳转
 		chromedp.Navigate(ets.TypeUrl),
 		// 存在类型组，说明成功进入

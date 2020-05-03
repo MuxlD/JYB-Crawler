@@ -72,6 +72,7 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 	log.Println("chrome ID", chromeId, ":Successfully entered goroutine...")
 	//新的浏览器
 	chrome := NewChromedp(ctx)
+	//分配浏览器
 	contx, cancel := chrome.AssignBrowser(Basics.Allo)
 
 	var stop bool
@@ -90,7 +91,8 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 			//生产者结束信号
 			stop = true
 		case tsCraw, ok = <-tsCh:
-			//tsCh通道和pendCh通道全部读出，done通道关闭
+			//通道执行close()内容数据被全部取出后 tsCraw = nil, ok = false
+			//如果通道没有执行close()，当通道内容数据被全部取出后，程序不会再进入该case
 			if !ok && stop && !pend {
 				log.Printf("所有通道内容已消费完," + chromeId + "号协程退出...\n")
 				//所有内容写入完成关闭es写入通道

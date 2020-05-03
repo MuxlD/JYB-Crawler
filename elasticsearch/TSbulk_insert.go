@@ -18,7 +18,7 @@ func BulkInsert(indexCtx context.Context) error {
 	for d := range Docsc {
 
 		atomic.AddUint64(&Total, 1)
-		bulk.Add(elastic.NewBulkIndexRequest().Id(strconv.Itoa(d.ID)).Doc(d))
+		bulk.Add(elastic.NewBulkIndexRequest().Id(strconv.Itoa(int(d.ID))).Doc(d))
 
 		//当bulk中的doc的数量达到bulkSize时，执行一次批量插入操作
 		if bulk.NumberOfActions() >= BulkSize {
@@ -42,7 +42,7 @@ func BulkInsert(indexCtx context.Context) error {
 			return indexCtx.Err()
 		}
 	}
-	// Commit the final batch before exiting
+	log.Println("begin final bulk insert")
 	if bulk.NumberOfActions() > 0 {
 		_, err = bulk.Do(indexCtx)
 		if err != nil {

@@ -9,11 +9,8 @@ import (
 	"github.com/chromedp/chromedp"
 	"log"
 	"regexp"
-	"sync/atomic"
 	"time"
 )
-
-var TsID uint64
 
 func (ts *TsCrawler) CrawlerByUrl(tsCraw Basics.TsUrl, ctx context.Context) (err error) {
 	log.Println("当前学校链接：", tsCraw.Url)
@@ -38,13 +35,7 @@ func (ts *TsCrawler) CrawlerByUrl(tsCraw Basics.TsUrl, ctx context.Context) (err
 		return
 	}
 
-	atomic.AddUint64(&TsID, 1)
-
-	bts.ID = int(TsID)
-	bts.TypeID = tsCraw.TypeID
-	bts.TypeUrl = Basics.EveryType[tsCraw.TypeID-1].TypeUrl
-	bts.TypeName = Basics.EveryType[tsCraw.TypeID-1].TypeName
-	bts.Url = tsCraw.Url
+	into(&bts, tsCraw)
 
 	fmt.Println(bts)
 
@@ -53,6 +44,14 @@ func (ts *TsCrawler) CrawlerByUrl(tsCraw Basics.TsUrl, ctx context.Context) (err
 	log.Printf("抓取成功,爬取耗时：%v\n", time.Since(start))
 
 	return
+}
+
+func into(bts *Basics.TrainingSchool, tsCraw Basics.TsUrl) {
+	bts.ID = tsCraw.ID
+	bts.TypeID = tsCraw.TypeID
+	bts.TypeUrl = Basics.EveryType[tsCraw.TypeID-1].TypeUrl
+	bts.TypeName = Basics.EveryType[tsCraw.TypeID-1].TypeName
+	bts.Url = tsCraw.Url
 }
 
 func (ts *TsCrawler) EveryEdu(goCtx context.Context, url string) (bts Basics.TrainingSchool, retry bool) {
