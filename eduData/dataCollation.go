@@ -73,7 +73,7 @@ func (ts *TsCrawler) Crawler(chromeId string, indexCtx, ctx context.Context) {
 	//新的浏览器
 	chrome := NewChromedp(ctx)
 	//分配浏览器
-	contx, cancel := chrome.AssignBrowser(Basics.Allo)
+	contx, cancel := chrome.AssignBrowser()
 
 	var stop bool
 	var ok, pend bool

@@ -22,7 +22,7 @@ func (ts *TsCrawler) getAllEdu(db *gorm.DB) {
 
 	chrome := NewChromedp(ts.ctx)
 	defer chrome.Close()
-	ctx, cancel := chrome.AssignBrowser(Basics.Allo)
+	ctx, cancel := chrome.AssignBrowser()
 	defer cancel()
 
 	//便利出所有的类型

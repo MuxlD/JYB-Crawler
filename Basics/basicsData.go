@@ -7,7 +7,6 @@ import (
 const (
 	JYBFL = "https://cs.jiaoyubao.cn/edu/"
 	JYB   = "https://cs.jiaoyubao.cn"
-	Allo  = "https://github.com/"
 )
 
 func InitConf() {
